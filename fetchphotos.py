@@ -20,6 +20,7 @@ tries to notify user on success
 from PIL import Image
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import codecs    # for handling Unicode content in config files
+import ctypes
 from datetime import datetime
 import ConfigParser  ## for configuration files
 import appdirs
@@ -102,8 +103,8 @@ def get_config_parser(config_file_name):
         config.readfp(codecs.open(config_file_name, encoding='utf-8'))
     except IOError, e:
         fp_logger.error("Can't open configuration file \"{}\": {}".format(
-            cfgfile, e))
-        sys.exit(1)
+            config_file_name, e))
+        raise
 
     return config
 
@@ -246,33 +247,32 @@ def check_sourcedir(config):
     try:
         digicamdir = config.get(u'General', u'DIGICAMDIR')
         if digicamdir.startswith(u'/path-to'):
-            fp_logger.error(u"You must set DIGICAMDIR to the name of the directory" +
-                            u" where the digicam photos are located (not /path-to-images)")
-            sys.exit(1)
+            raise ValueError(u"You must set DIGICAMDIR to the name of the directory" +
+                             u" where the digicam photos are located (not /path-to-images)")
         if not os.path.exists(digicamdir):
-            fp_logger.error(u"The digicam photo directory \"{}\" does not exist".format(
+            raise IOError(ctypes.get_errno(),
+                          u"The digicam photo directory \"{}\" does not exist".format(
                 digicamdir))
-            sys.exit(1)
     except ConfigParser, e:
         fp_logger.error(u"Can't find DIGICAMDIR setting in configuration file: %s"%e)
-        sys.exit(1)
+        raise
         
 def check_tempdir(config):
     """Make sure the temp directory is present."""
     try:
         tempdir = config.get(u'General', u'TEMPDIR')
         if tempdir.startswith(u'/path-to'):
-            fp_logger.error("You must set TEMPDIR to the name of the directory" +
-                            " where the digicam photos are processed" +
-                            " (not /path-to-temporary-directory)")
-            sys.exit(1)
+            raise ValueError("You must set TEMPDIR to the name of the directory" +
+                             " where the digicam photos are processed" +
+                             " (not /path-to-temporary-directory)")
+
         if not os.path.exists(tempdir):
-            fp_logger.error(u"The digicam temporary directory \"{}\" does not exist".format(
-                tempdir))
-            sys.exit(1)
+            raise IOError(ctypes.get_errno(),
+                          u"The digicam temporary directory \"{}\" does not exist".format(
+                              tempdir))
     except ConfigParser, e:
         fp_logger.error(u"Can't find TEMPDIR setting in configuration file: %s"%e)
-        sys.exit(1)
+        raise
 
 def check_destdir(config):
     """Make sure the destination directory is present."""
