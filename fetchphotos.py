@@ -253,7 +253,7 @@ def check_sourcedir(config):
             raise IOError(ctypes.get_errno(),
                           u"The digicam photo directory \"{}\" does not exist".format(
                 digicamdir))
-    except ConfigParser, e:
+    except ConfigParser.NoOptionError, e:
         fp_logger.error(u"Can't find DIGICAMDIR setting in configuration file: %s"%e)
         raise
         
@@ -262,34 +262,38 @@ def check_tempdir(config):
     try:
         tempdir = config.get(u'General', u'TEMPDIR')
         if tempdir.startswith(u'/path-to'):
-            raise ValueError("You must set TEMPDIR to the name of the directory" +
-                             " where the digicam photos are processed" +
-                             " (not /path-to-temporary-directory)")
+            raise ValueError(u"You must set TEMPDIR to the name of the directory" +
+                             u" where the digicam photos are processed" +
+                             u" (not /path-to-temporary-directory)")
 
         if not os.path.exists(tempdir):
             raise IOError(ctypes.get_errno(),
                           u"The digicam temporary directory \"{}\" does not exist".format(
                               tempdir))
-    except ConfigParser, e:
-        fp_logger.error(u"Can't find TEMPDIR setting in configuration file: %s"%e)
+    except ConfigParser.NoOptionError, e:
+        e.message = (u"Can't find TEMPDIR setting in configuration file: " +
+        e.message)
         raise
 
 def check_destdir(config):
     """Make sure the destination directory is present."""
     try:
-        destdir = config.get(u'General', u'DESTDIR')
+        destdir = config.get(u'General', u'DESTINATIONDIR')
         if destdir.startswith(u'/path-to'):
-            fp_logger.error(u"You must set DESTDIR to the name of the directory" +
-                            u" where the digicam photos will be moved to" +
-                            u" (not /path-to-destination)")
-            sys.exit(1)
+            raise ValueError(u"You must set DESTINATIONDIR to the name of the directory" +
+                             u" where the digicam photos will be moved to" +
+                             u" (not /path-to-destination)")
+
         if not os.path.exists(destdir):
-            fp_logger.error(u"The digicam destination directory \"{}\" does not exist".format(
+            raise IOError(ctypes.get_errno(),
+                          u"The digicam destination directory \"{}\" does not exist".format(
                 destdir))
-            sys.exit(1)
+
     except ConfigParser, e:
-        fp_logger.error(u"Can't find DESTDIR setting in configuration file: %s"%e)
-        sys.exit(1)
+        e.message = (u"Can't find DESTINATIONDIR setting in configuration file: %s"%e +
+                     e.message)
+        #fp_logger.error(u"Can't find DESTINATIONDIR setting in configuration file: %s"%e)
+        raise e
 
 
 def main():
