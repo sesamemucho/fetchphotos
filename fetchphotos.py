@@ -59,14 +59,14 @@ def get_config_filename(args):
             appdirs.user_config_dir('fetchphotos', False),
             'fetchphotos.cfg')
 
-def generate_configfile(args, cfgname):
+def generate_configfile(cfgname):
     """Create a skeleton configuration file, and its directory if needed."""
-    (dir, base) = os.path.split(cfgname)
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+    directory = os.path.dirname(cfgname)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-    with open(cfgname, "w") as f:
-        f.write(u"""
+    with open(cfgname, "w") as out:
+        out.write(u"""
 [General]
 
 # directory, where the digicam photos are located
@@ -98,12 +98,15 @@ LOWERCASE_FILENAME=true
 """)
 
 def get_config_parser(config_file_name):
+    """Convenient method for getting config object.
+    It sets the encoding, and complains about problems.
+    """
     config = ConfigParser.SafeConfigParser()
     try:
         config.readfp(codecs.open(config_file_name, encoding='utf-8'))
-    except IOError, e:
-        fp_logger.error("Can't open configuration file \"{}\": {}".format(
-            config_file_name, e))
+    except IOError, ex:
+        fp_logger.error("Can't open configuration file \"%s\": %s",
+                        config_file_name, ex)
         raise
 
     return config
@@ -252,11 +255,12 @@ def check_sourcedir(config):
         if not os.path.exists(digicamdir):
             raise IOError(ctypes.get_errno(),
                           u"The digicam photo directory \"{}\" does not exist".format(
-                digicamdir))
-    except ConfigParser.NoOptionError, e:
-        fp_logger.error(u"Can't find DIGICAMDIR setting in configuration file: %s"%e)
+                              digicamdir))
+    except ConfigParser.NoOptionError, ex:
+        fp_logger.error(u"Can't find DIGICAMDIR setting in configuration file: %s",
+                        ex)
         raise
-        
+
 def check_tempdir(config):
     """Make sure the temp directory is present."""
     try:
@@ -270,9 +274,9 @@ def check_tempdir(config):
             raise IOError(ctypes.get_errno(),
                           u"The digicam temporary directory \"{}\" does not exist".format(
                               tempdir))
-    except ConfigParser.NoOptionError, e:
-        e.message = (u"Can't find TEMPDIR setting in configuration file: " +
-        e.message)
+    except ConfigParser.NoOptionError, ex:
+        ex.message = (u"Can't find TEMPDIR setting in configuration file: " +
+                      ex.message)
         raise
 
 def check_destdir(config):
@@ -287,13 +291,13 @@ def check_destdir(config):
         if not os.path.exists(destdir):
             raise IOError(ctypes.get_errno(),
                           u"The digicam destination directory \"{}\" does not exist".format(
-                destdir))
+                              destdir))
 
-    except ConfigParser, e:
-        e.message = (u"Can't find DESTINATIONDIR setting in configuration file: %s"%e +
-                     e.message)
+    except ConfigParser.Error, ex:
+        ex.message = (u"Can't find DESTINATIONDIR setting in configuration file: %s"%ex +
+                      ex.message)
         #fp_logger.error(u"Can't find DESTINATIONDIR setting in configuration file: %s"%e)
-        raise e
+        raise
 
 
 def main():
@@ -344,12 +348,12 @@ def main():
     cfgfile = get_config_filename(args)
 
     if args.generate_configfile:
-        generate_configfile(args, cfgfile)
-        fp_logger.info("Generated configuration file in \"{}\"".format(cfgfile))
+        generate_configfile(cfgfile)
+        fp_logger.info("Generated configuration file in \"%s\"", cfgfile)
         sys.exit(0)
 
-    config = get_config_parser(config)
-        
+    config = get_config_parser(cfgfile)
+
     #print("Config is:")
     #config.write(sys.stdout)
 
@@ -362,7 +366,7 @@ def main():
     print("filelist: ", args.filelist)
     sys.exit(0)
 
-    
+
     ## FIXXME: notify user of download time
 
     for filename in args.filelist:
@@ -371,7 +375,7 @@ def main():
 
             new_filename = get_timestamp_string(filename) + "_" + filename
 
-            if not no_lowercase:
+            if config.getboolean('File_processing', 'LOWERCASE_FILENAME'):
                 new_filename = new_filename.lower()
 
             os.rename(filename, new_filename)

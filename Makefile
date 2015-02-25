@@ -2,4 +2,4 @@
 
 
 pylint:
-	pylint fetchphotos.py test/unit_test.py
+	pylint --rcfile=.pylintrc fetchphotos.py tests/unit_tests.py
